@@ -226,7 +226,7 @@ class McpServer:
     dicts (handle) or text lines (handle_line); serve_mcp adds the stdio loop.
     """
 
-    def __init__(self, store: Store, agent_id: str):
+    def __init__(self, store: Store, agent_id: str, context_library=None):
         if not isinstance(agent_id, str) or not AGENT_ID.fullmatch(agent_id):
             raise ValueError('Agent id: 1-200 characters, letters, digits and :._@/- only')
         if agent_id.startswith('service:'):
@@ -235,6 +235,9 @@ class McpServer:
         self.store = store
         self.agent_id = agent_id
         self.protocol = LATEST_PROTOCOL
+        # Optional ContextLib plugin (agentbrain-contextlib): the project library's
+        # context_* tools, served as this same fixed agent identity.
+        self.context_library = context_library
 
     # ---- JSON-RPC -----------------------------------------------------------------
     def handle_line(self, line):
@@ -337,13 +340,16 @@ class McpServer:
             if self.protocol >= '2025-06-18':
                 tool['title'] = spec['title']
             tools.append(tool)
-        return tools
+        return tools + self._context_tools()
 
     def call_tool(self, name, arguments):
         """Run one tool. Every failure comes back as a result with isError, in plain words."""
+        if self.context_library is not None and isinstance(name, str) and name.startswith('context_'):
+            return self._context_call(name, arguments)
         spec = next((t for t in TOOLS if t['name'] == name), None)
         if spec is None:
-            raise RpcError(INVALID_PARAMS, 'Unknown tool: ' + name + '. Available: ' + ', '.join(TOOL_NAMES) + '.')
+            available = list(TOOL_NAMES) + [t['name'] for t in self._context_tools()]
+            raise RpcError(INVALID_PARAMS, 'Unknown tool: ' + name + '. Available: ' + ', '.join(available) + '.')
         try:
             args = self._check_arguments(spec, arguments)
             if name != 'list_agents':
@@ -355,6 +361,44 @@ class McpServer:
             self._log(traceback.format_exc())
             return self._result('The handoff server hit an unexpected error: ' + str(e)[:300], None, error=True)
         return self._result(text, data)
+
+    # ---- ContextLib plugin -----------------------------------------------------------
+    def _context_rpc(self, method, params=None):
+        from agentbrain_contextlib import mcp as contextlib_mcp
+        message = {'jsonrpc': '2.0', 'id': 0, 'method': method}
+        if params is not None:
+            message['params'] = params
+        reply = contextlib_mcp.handle(self.context_library, self.agent_id, message)
+        if reply is None or 'error' in reply:
+            error = (reply or {}).get('error') or {}
+            raise RpcError(error.get('code', INTERNAL_ERROR), error.get('message', 'ContextLib did not answer'))
+        return reply['result']
+
+    def _fit_protocol(self, item, result=False):
+        """Drop fields the negotiated protocol version does not define."""
+        item = dict(item)
+        if self.protocol < '2025-03-26':
+            item.pop('annotations', None)
+        if self.protocol < '2025-06-18':
+            item.pop('structuredContent' if result else 'title', None)
+            if not result:
+                item.pop('outputSchema', None)
+        return item
+
+    def _context_tools(self):
+        if self.context_library is None:
+            return []
+        return [self._fit_protocol(tool) for tool in self._context_rpc('tools/list').get('tools', [])]
+
+    def _context_call(self, name, arguments):
+        try:
+            result = self._context_rpc('tools/call', {'name': name, 'arguments': arguments or {}})
+        except RpcError:
+            raise
+        except Exception as e:  # the plugin failing is still an answer, not a dead session
+            self._log(traceback.format_exc())
+            return self._result('The ContextLib plugin hit an unexpected error: ' + str(e)[:300], None, error=True)
+        return self._fit_protocol(result, result=True)
 
     def _result(self, text, data, error=False):
         result = {'content': [{'type': 'text', 'text': text}], 'isError': error}
@@ -784,14 +828,28 @@ def _write(stream, text):
     stream.flush()
 
 
-def serve_mcp(store: Store, agent_id: str, stdin=None, stdout=None) -> int:
+def open_context_library(path):
+    """The ContextLib library at `path` for the plugin, or None when no path is given."""
+    if not path:
+        return None
+    try:
+        from agentbrain_contextlib.library import Library
+    except ImportError:
+        raise ValueError('a ContextLib library was given but agentbrain-contextlib is not installed; '
+                         'pip install "git+https://github.com/willykeenan/agentbrain-contextlib"')
+    if not os.path.isfile(os.path.join(path, 'library.json')):
+        raise ValueError('no ContextLib library at ' + path + ' (run: ctxlib init PATH)')
+    return Library(path, writer='mcp')
+
+
+def serve_mcp(store: Store, agent_id: str, stdin=None, stdout=None, context_library=None) -> int:
     """Serve one agent over stdio until the client closes stdin. Returns the exit code.
 
     Standard output carries protocol messages only. While serving on the real stdout,
     sys.stdout points at stderr, so a stray print() anywhere cannot corrupt the stream
     the client is parsing.
     """
-    server = McpServer(store, agent_id)
+    server = McpServer(store, agent_id, context_library=context_library)
     saved_stdout = sys.stdout
     if stdout is None:
         stdout = getattr(sys.stdout, 'buffer', sys.stdout)
@@ -818,10 +876,13 @@ def main(argv=None) -> int:
                                      description='Run the handoffs MCP server over stdio for one agent.')
     parser.add_argument('--agent', required=True, help='the exact agent id this server acts as')
     parser.add_argument('--db', help='handoff database (default: $HANDOFFS_DB, else ./.handoffs/handoffs.sqlite3)')
+    parser.add_argument('--context-library', help='also serve this ContextLib library\'s context_* tools '
+                                                  '(default: $CONTEXTLIB_ROOT when set)')
     args = parser.parse_args(argv)
     db = args.db or os.environ.get('HANDOFFS_DB') or os.path.join('.handoffs', 'handoffs.sqlite3')
     try:
-        return serve_mcp(Store(db), args.agent)
+        library = open_context_library(args.context_library or os.environ.get('CONTEXTLIB_ROOT'))
+        return serve_mcp(Store(db), args.agent, context_library=library)
     except ValueError as e:
         print('handoffs mcp: ' + str(e), file=sys.stderr)
         return 2

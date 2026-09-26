@@ -127,6 +127,17 @@ args = ["mcp", "--agent", "me"]
 
 Point every process at the same database with `--db` or `HANDOFFS_DB`. The engine (`handoffs serve` or `handoffs run`) is what actually delivers; the MCP server only writes to the inbox. Details: [docs/MCP.md](docs/MCP.md).
 
+### Project memory: the ContextLib plugin
+
+[ContextLib](https://github.com/willykeenan/agentbrain-contextlib) keeps a project's decisions, facts and lessons as plain Markdown files. Install it and point the same server at a library, and each agent gets the `context_*` tools (brief, search, get, record, supersede, review, capture, export, import, status) next to its handoff tools:
+
+```bash
+pip install "git+https://github.com/willykeenan/agentbrain-contextlib"
+claude mcp add handoffs -- handoffs mcp --agent me --context-library "/Volumes/SSD/ContextLib"
+```
+
+`$CONTEXTLIB_ROOT` works in place of the flag. The plugin runs as the server's fixed agent id, so an agent's records are authored by exactly the agent that sent its handoffs. Without a library, the server offers handoff tools only.
+
 ## CLI
 
 ```

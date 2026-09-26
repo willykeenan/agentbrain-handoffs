@@ -622,8 +622,9 @@ def serve_page(serve, store, engine, args):
 def cmd_mcp(args):
     store = open_store(args)
     require_agent(store, args.agent)
-    from .mcp import serve_mcp
-    return serve_mcp(store, args.agent) or 0  # stdout belongs to the MCP protocol from here on
+    from .mcp import open_context_library, serve_mcp
+    library = open_context_library(args.context_library or os.environ.get('CONTEXTLIB_ROOT'))
+    return serve_mcp(store, args.agent, context_library=library) or 0  # stdout belongs to the MCP protocol from here on
 
 
 # ---- the demo ----------------------------------------------------------------------
@@ -913,6 +914,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = command('mcp', cmd_mcp, 'run an MCP server (stdio) for one agent')
     p.add_argument('--agent', required=True, help='the agent this MCP server acts as; fixed for its lifetime')
+    p.add_argument('--context-library', help="also serve this ContextLib library's context_* tools "
+                                             '(default: $CONTEXTLIB_ROOT when set; needs agentbrain-contextlib)')
 
     p = sub.add_parser('demo', help='watch simulated agents hand off work on a live page',
                        description='Watch four simulated agents hand off work on a live page. Uses a temporary database.')

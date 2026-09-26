@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Optional ContextLib plugin: `handoffs mcp --context-library PATH` (or `$CONTEXTLIB_ROOT`) also serves the library's `context_*` tools as the same fixed agent id.
+
 ## 0.1.0
 
 First public release of AgentBrain Handoffs.
