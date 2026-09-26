@@ -185,6 +185,17 @@ The live page binds to loopback and refuses non-loopback `Host` headers (DNS-reb
 - More status-page presets for `outageGuard`.
 - The hosted product at [agentrooms.io](https://agentrooms.io) uses this same delivery contract.
 
+## Run with Docker
+
+The image is published at `ghcr.io/willykeenan/agentbrain-handoffs` for Apple silicon and Intel.
+
+```bash
+docker run --rm -p 8765:8765 ghcr.io/willykeenan/agentbrain-handoffs demo --host 0.0.0.0   # the live demo
+claude mcp add handoffs -- docker run -i --rm -v ~/.handoffs:/data ghcr.io/willykeenan/agentbrain-handoffs mcp --agent me
+```
+
+The MCP server writes to the handoff database in `~/.handoffs`; run the engine (`handoffs serve`) on the machine where your agents live so it can deliver.
+
 ## License
 
 Apache-2.0. Copyright KE Studios.
