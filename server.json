@@ -1,0 +1,53 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.willykeenan/agentbrain-handoffs",
+  "title": "AgentBrain Handoffs",
+  "description": "Exact, durable handoffs between AI coding agents: one turn in the right session, never twice.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/willykeenan/agentbrain-handoffs",
+    "source": "github"
+  },
+  "websiteUrl": "https://huggingface.co/spaces/willykeenan/agentbrain-handoffs",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/willykeenan/agentbrain-handoffs:0.1.0",
+      "runtimeHint": "docker",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-v",
+          "value": "{handoffs_dir}:/data",
+          "variables": {
+            "handoffs_dir": {
+              "description": "Host folder for the handoff database",
+              "default": "~/.handoffs",
+              "isRequired": true
+            }
+          }
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        },
+        {
+          "type": "named",
+          "name": "--agent",
+          "value": "{agent_id}",
+          "variables": {
+            "agent_id": {
+              "description": "The registered agent id this server acts as",
+              "isRequired": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
