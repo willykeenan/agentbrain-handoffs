@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Live handoffs between AI coding agents.">
+<title>AgentBrain Handoffs</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --paper: #f4f0e8;
+  --ink: #1b1814;
+  --muted: #6e675c;
+  --faint: #8a8276;
+  --line: #e2dacd;
+  --card: #fffcf7;
+  --card-hover: #fbf7ef;
+  --moss: #2c6a52;
+  --moss-ink: #2c6a52;
+  --moss-soft: #e5f1ea;
+  --amber: #8a5a10;
+  --amber-ink: #8a5a10;
+  --amber-soft: #f7edd6;
+  --rose: #9b3a32;
+  --rose-ink: #9b3a32;
+  --rose-soft: #f7e6e2;
+  --sky: #3c5878;
+  --sky-soft: #e6eef6;
+  --chip: #efe8dc;
+  --shadow: 0 1px 0 rgba(27, 24, 20, 0.04), 0 10px 28px -18px rgba(27, 24, 20, 0.35);
+  --radius: 16px;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --pad: clamp(16px, 3vw, 28px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12110f;
+    --ink: #f2ece3;
+    --muted: #a49a8c;
+    --faint: #7d7468;
+    --line: #2c2a26;
+    --card: #1b1a17;
+    --card-hover: #221f1b;
+    --moss: #7dba9a;
+    --moss-ink: #b6e0c8;
+    --moss-soft: #1a2b22;
+    --amber: #e0b25a;
+    --amber-ink: #f0d39a;
+    --amber-soft: #2c2414;
+    --rose: #e08a80;
+    --rose-ink: #f0b8b2;
+    --rose-soft: #2c1b19;
+    --sky: #8eadd0;
+    --sky-soft: #1c2530;
+    --chip: #2a2722;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 16px 36px -20px rgba(0, 0, 0, 0.7);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: var(--sans);
+  background:
+    radial-gradient(1200px 480px at 10% -10%, color-mix(in srgb, var(--moss) 12%, transparent), transparent 60%),
+    radial-gradient(900px 420px at 110% 0%, color-mix(in srgb, var(--amber) 10%, transparent), transparent 55%),
+    var(--paper);
+  color: var(--ink);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--moss-ink); }
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 22px var(--pad) 64px;
+}
+header.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+.mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--moss-soft);
+  color: var(--moss-ink);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--moss) 18%, transparent);
+}
+.brand h1 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.brand p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+}
+.live .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.live.ok .dot { background: var(--moss); box-shadow: 0 0 0 4px color-mix(in srgb, var(--moss) 22%, transparent); }
+.live.warn .dot { background: var(--amber); }
+.live.err .dot { background: var(--rose); }
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.tile {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 16px 14px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.tile .k {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.tile .v {
+  margin-top: 8px;
+  font-size: clamp(1.45rem, 3.4vw, 1.9rem);
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.tile .s {
+  margin-top: 6px;
+  color: var(--faint);
+  font-size: 0.78rem;
+}
+.tile.attention .v { color: var(--amber-ink); }
+.agents {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 22px;
+}
+.agent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 12px 7px 10px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.agent .adot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--faint);
+  flex: 0 0 auto;
+}
+.agent.working .adot { background: var(--moss); }
+.agent.attention .adot { background: var(--amber); }
+.agent.queued .adot { background: var(--sky); }
+.agent.idle .adot { background: var(--faint); }
+.agent .aname {
+  font-weight: 600;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+.agent .ameta {
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.agent .aload {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  background: var(--chip);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+section.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 2px);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.panel h2 {
+  margin: 0;
+  padding: 14px 16px 12px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+}
+.list { padding: 8px; }
+.card {
+  border-radius: 14px;
+  padding: 12px 12px 11px;
+  margin: 6px 0;
+  border: 1px solid transparent;
+}
+.card:hover { background: var(--card-hover); }
+.card.needs {
+  background: var(--amber-soft);
+  border-color: color-mix(in srgb, var(--amber) 28%, var(--line));
+}
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.title {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 0.98rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.route {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-top: 3px;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--faint);
+  font-size: 0.78rem;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.74rem;
+  font-weight: 650;
+  background: var(--chip);
+  color: var(--ink);
+}
+.chip.pending { background: var(--sky-soft); color: var(--sky); }
+.chip.active { background: var(--moss-soft); color: var(--moss-ink); }
+.chip.terminal { background: var(--chip); color: var(--muted); }
+.chip.alert { background: var(--rose-soft); color: var(--rose-ink); }
+.chip.warn { background: var(--amber-soft); color: var(--amber-ink); }
+.detail {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.empty {
+  color: var(--muted);
+  padding: 22px 14px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.stack { display: grid; gap: 18px; }
+.work-item, .event {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.work-item:last-child, .event:last-child { border-bottom: 0; }
+.event .title { margin-top: 6px; white-space: normal; }
+.empty.slim { padding: 8px 0; }
+.due { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+.due.overdue { color: var(--rose-ink); font-weight: 700; }
+.event .when {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--faint);
+}
+.banner {
+  display: none;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+  font-size: 0.88rem;
+}
+.banner.show { display: block; }
+footer.foot {
+  margin-top: 28px;
+  color: var(--faint);
+  font-size: 0.78rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+noscript {
+  display: block;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+  border-radius: 12px;
+}
+@media (max-width: 900px) {
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 390px) {
+  .wrap { padding: 14px 12px 40px; }
+  .tiles { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tile { padding: 12px; }
+  .tile .v { font-size: 1.4rem; }
+  header.top { flex-direction: column; }
+  .live { align-self: flex-start; }
+  .agent { max-width: 100%; flex-wrap: wrap; }
+  .agent .aname, .agent .ameta { white-space: normal; }
+  .title { white-space: normal; overflow-wrap: anywhere; }
+  .route { overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">🤝</div>
+      <div>
+        <h1>AgentBrain Handoffs</h1>
+        <p>Exact, durable delivery between coding agents</p>
+      </div>
+    </div>
+    <div class="live" id="live" aria-live="polite"><span class="dot"></span><span id="live-label">Connecting…</span></div>
+  </header>
+  <div class="banner" id="banner" role="status"></div>
+  <section class="tiles" aria-label="Headline tiles">
+    <article class="tile" id="tile-flight">
+      <div class="k">In flight</div>
+      <div class="v" id="m-inflight">—</div>
+      <div class="s" id="m-inflight-s">Active deliveries</div>
+    </article>
+    <article class="tile attention" id="tile-attention">
+      <div class="k">Needs attention</div>
+      <div class="v" id="m-attention">—</div>
+      <div class="s" id="m-attention-s">Held, uncertain, overdue</div>
+    </article>
+    <article class="tile" id="tile-accept">
+      <div class="k">Median time to accept</div>
+      <div class="v" id="m-accept">—</div>
+      <div class="s" id="m-accept-s">Enqueue → accepted, 24 h</div>
+    </article>
+    <article class="tile" id="tile-resends">
+      <div class="k">Resends in 24 h</div>
+      <div class="v" id="m-resends">—</div>
+      <div class="s" id="m-resends-s">Automatic, bounded retries</div>
+    </article>
+  </section>
+  <section class="agents" id="agents" aria-label="Agent strip"></section>
+  <div class="layout">
+    <section class="panel" aria-label="Live handoffs">
+      <h2>Handoffs</h2>
+      <div class="list" id="handoffs"><div class="empty">Waiting for the first status…</div></div>
+    </section>
+    <div class="stack">
+      <section class="panel" aria-label="Work panel">
+        <h2>Work</h2>
+        <div id="work"><div class="empty">No open work.</div></div>
+      </section>
+      <section class="panel" aria-label="Event timeline">
+        <h2>Timeline</h2>
+        <div id="events"><div class="empty">No events yet.</div></div>
+      </section>
+    </div>
+  </div>
+  <footer class="foot">
+    <span>One new turn for the exact recipient. Nothing is guessed.</span>
+    <span id="stamp"></span>
+  </footer>
+  <noscript>This page needs JavaScript to poll /api/status every 3 s.</noscript>
+</div>
+<script>
+(function () {
+  var POLL_MS = 3000;
+  var lastSequence = null;
+  var events = [];
+  var timer = null;
+
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fmtSeconds(n) {
+    if (n == null || !isFinite(n)) return '—';
+    if (n < 10) return n.toFixed(1) + 's';
+    if (n < 60) return Math.round(n) + 's';
+    if (n < 3600) return (n / 60).toFixed(n < 600 ? 1 : 0) + 'm';
+    return (n / 3600).toFixed(n < 36000 ? 1 : 0) + 'h';
+  }
+
+  function ago(ts, now) {
+    if (ts == null) return '';
+    var s = Math.max(0, now - ts);
+    if (s < 60) return Math.round(s) + 's';
+    if (s < 3600) return Math.round(s / 60) + 'm';
+    if (s < 86400) return Math.round(s / 3600) + 'h';
+    return Math.round(s / 86400) + 'd';
+  }
+
+  function dueLabel(item, now) {
+    if (item.dueAt == null) return 'No due time';
+    var delta = item.dueAt - now;
+    if (item.overdue) return 'Overdue by ' + fmtSeconds(Math.abs(delta));
+    if (delta <= 0) return 'Was due ' + fmtSeconds(Math.abs(delta)) + ' ago';
+    return 'Due in ' + fmtSeconds(delta);
+  }
+
+  function workRank(w) {
+    if (w.overdue) return 0;
+    if (w.state === 'open' || w.state === 'accepted') return 1;
+    return 2;
+  }
+
+  function chipClass(status, phase, needs) {
+    if (needs && (status === 'UNCERTAIN' || status === 'UNAVAILABLE' || status === 'HELD' || status === 'FAILED')) return 'alert';
+    if (needs) return 'warn';
+    if (phase === 'active') return 'active';
+    if (phase === 'pending') return 'pending';
+    return 'terminal';
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function renderAgents(agents) {
+    var root = document.getElementById('agents');
+    if (!agents.length) {
+      root.innerHTML = '<div class="empty slim">No agents registered yet.</div>';
+      return;
+    }
+    root.innerHTML = agents.map(function (a) {
+      var load = a.openLoad == null ? 0 : a.openLoad;
+      var activity = a.activity ? String(a.activity) : 'unknown';
+      return '<div class="agent ' + esc(a.state || 'idle') + '" title="' + esc(activity) + '">' +
+        '<span class="adot" aria-hidden="true"></span>' +
+        '<span class="aname">' + esc(a.name) + '</span>' +
+        '<span class="ameta">' + esc(a.provider) + '</span>' +
+        '<span class="aload">load ' + esc(load) + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  function renderHandoffs(items, now) {
+    var root = document.getElementById('handoffs');
+    var rows = (items || []).slice().sort(function (a, b) {
+      return (b.needsAttention ? 1 : 0) - (a.needsAttention ? 1 : 0) || (b.created - a.created);
+    });
+    if (!rows.length) {
+      root.innerHTML = '<div class="empty">No handoffs yet. Send one and it will appear here.</div>';
+      return;
+    }
+    root.innerHTML = rows.map(function (h) {
+      var needs = !!h.needsAttention;
+      return '<article class="card' + (needs ? ' needs' : '') + '">' +
+        '<div class="row"><div class="title">' + esc(h.title) + '</div>' +
+        '<span class="chip ' + chipClass(h.status, h.phase, needs) + '">' + esc(h.label || h.status) + '</span></div>' +
+        '<div class="route">' + esc(h.senderName) + ' → ' + esc(h.recipientName) + '</div>' +
+        (h.detail ? '<div class="detail">' + esc(h.detail) + '</div>' : '') +
+        '<div class="meta"><span>' + esc(h.attempts || 0) + ' attempt' + (h.attempts === 1 ? '' : 's') + '</span>' +
+        '<span>age ' + esc(ago(h.created, now)) + '</span>' +
+        (h.overdue ? '<span class="due overdue">overdue</span>' : '') +
+        '</div></article>';
+    }).join('');
+  }
+
+  function renderWork(items, now) {
+    var root = document.getElementById('work');
+    var rows = (items || []).slice().sort(function (a, b) {
+      return workRank(a) - workRank(b) || ((a.dueAt || 1e15) - (b.dueAt || 1e15));
+    });
+    if (!rows.length) {
+      root.innerHTML = '<div class="empty">No open work.</div>';
+      return;
+    }
+    root.innerHTML = rows.map(function (w) {
+      return '<div class="work-item">' +
+        '<div class="row"><div class="title">' + esc(w.title) + '</div>' +
+        '<span class="chip">' + esc(w.state) + '</span></div>' +
+        '<div class="route">' + esc(w.senderName) + ' → ' + esc(w.recipientName) + '</div>' +
+        '<div class="meta"><span class="due' + (w.overdue ? ' overdue' : '') + '">' + esc(dueLabel(w, now)) + '</span></div>' +
+        (w.summary ? '<div class="detail">' + esc(w.summary) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function renderEvents(items, now) {
+    var root = document.getElementById('events');
+    if (!items.length) {
+      root.innerHTML = '<div class="empty">No events yet.</div>';
+      return;
+    }
+    var shown = items.slice(-80).reverse();
+    root.innerHTML = shown.map(function (e) {
+      return '<div class="event">' +
+        '<div class="row"><span class="chip ' + chipClass(e.status, e.phase, false) + '">' + esc(e.label || e.status) + '</span>' +
+        '<span class="when">' + esc(ago(e.at, now)) + ' ago</span></div>' +
+        '<div class="title">' + esc(e.title) + '</div>' +
+        '<div class="route">' + esc(e.senderName) + ' → ' + esc(e.recipientName) + '</div>' +
+        (e.detail ? '<div class="detail">' + esc(e.detail) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function applyStatus(data) {
+    var m = data.metrics || {};
+    var now = data.generatedAt || (Date.now() / 1000);
+    setText('m-inflight', String(m.inFlight == null ? 0 : m.inFlight));
+    setText('m-attention', String(m.needsAttention == null ? 0 : m.needsAttention));
+    var acc = (m.toAccepted || {}).medianSeconds;
+    setText('m-accept', acc == null ? '—' : fmtSeconds(acc));
+    setText('m-resends', String(m.resends24h == null ? 0 : m.resends24h));
+    var samples = (m.toAccepted || {}).samples;
+    setText('m-accept-s', samples ? samples + ' deliveries in 24 h' : 'Enqueue → accepted, 24 h');
+    setText('m-inflight-s', (m.queued ? m.queued + ' queued · ' : '') + 'Active deliveries');
+    renderAgents(data.agents || []);
+    renderHandoffs(data.handoffs || [], now);
+    renderWork(data.work || [], now);
+    var health = data.health;
+    var live = document.getElementById('live');
+    var label = document.getElementById('live-label');
+    if (health && health.ok && (health.ageSeconds == null || health.ageSeconds < 30)) {
+      live.className = 'live ok';
+      label.textContent = 'Engine live';
+    } else if (health && health.ok === false) {
+      live.className = 'live warn';
+      label.textContent = 'Engine reported errors';
+    } else {
+      live.className = 'live ok';
+      label.textContent = data.publicDemo ? 'Public demo' : 'Page live';
+    }
+    document.getElementById('stamp').textContent = 'Updated ' + ago(now, Date.now() / 1000) + ' ago';
+  }
+
+  function mergeEvents(payload) {
+    var incoming = (payload && payload.events) || [];
+    incoming.forEach(function (e) {
+      if (!events.some(function (x) { return x.sequence === e.sequence; })) events.push(e);
+    });
+    events.sort(function (a, b) { return a.sequence - b.sequence; });
+    if (events.length > 200) events = events.slice(-200);
+    if (payload && payload.last != null) lastSequence = payload.last;
+  }
+
+  function showError(message) {
+    var el = document.getElementById('banner');
+    el.textContent = message;
+    el.className = 'banner show';
+    document.getElementById('live').className = 'live err';
+    document.getElementById('live-label').textContent = 'Unreachable';
+  }
+
+  function clearError() {
+    document.getElementById('banner').className = 'banner';
+  }
+
+  function poll() {
+    var statusReq = fetch('/api/status', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+    var eventUrl = lastSequence == null ? '/api/events' : '/api/events?after=' + lastSequence;
+    var eventsReq = fetch(eventUrl, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+    Promise.all([statusReq, eventsReq]).then(function (resps) {
+      if (!resps[0].ok) throw new Error('Status ' + resps[0].status);
+      return Promise.all(resps.map(function (r) { return r.ok ? r.json() : { events: [] }; }));
+    }).then(function (pair) {
+      clearError();
+      applyStatus(pair[0]);
+      mergeEvents(pair[1]);
+      renderEvents(events, pair[0].generatedAt || (Date.now() / 1000));
+    }).catch(function () {
+      showError('Cannot reach the handoffs server. If this is a local page, open it at 127.0.0.1.');
+    });
+  }
+
+  poll();
+  timer = setInterval(poll, POLL_MS);
+})();
+</script>
+</body>
+</html>

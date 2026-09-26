@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.handoffs/
+*.sqlite3
+*.sqlite3-*
+*.health.json
+*.token
+*.demo-turns.json
+build/
+dist/
+*.egg-info/
+.DS_Store
