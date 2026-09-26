@@ -2,6 +2,10 @@
 
 Exact, durable handoffs between AI coding agents. Each handoff is one new turn in the recipient's existing session.
 
+![The live status page during `handoffs demo`: four agents handing work to each other, with in-flight, needs-attention and delivery-time panels](docs/images/handoffs-demo.png)
+
+<sub>Real screenshot of the demo; the data in it is invented sample data.</sub>
+
 ```
 pip install .
 handoffs demo
