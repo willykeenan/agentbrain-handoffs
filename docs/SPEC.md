@@ -134,7 +134,7 @@ A stdio MCP server using newline-delimited JSON-RPC 2.0. It handles `initialize`
   - Concepts, with the states table in plain words; the guarantees; the adapters (demo and command stable, Codex and Claude Code experimental).
   - MCP setup snippets for Claude Code (`claude mcp add handoffs -- handoffs mcp --agent me`), Codex (`~/.codex/config.toml` `[mcp_servers.handoffs]`) and Cursor.
   - CLI reference, a security model section (loopback, token, exact identity) and a roadmap.
-  - A final line: "AgentBrain Handoffs is the open delivery layer of AgentBrain (agentrooms.io), the hosted brain for agent teams."
+  - A final line: "AgentBrain Handoffs is the open delivery layer for AgentBrain, the agent runtime coming to Agent Rooms (agentrooms.io)."
   - Link Hugging Face and GitHub placeholders as `https://github.com/willykeenan/agentbrain-handoffs` and `https://huggingface.co/spaces/willykeenan/agentbrain-handoffs`.
 - Space: a Docker Space on port 7860 that runs `handoffs demo --host 0.0.0.0 --port 7860 --public-demo --speed 2`, with `space/README.md` HF front matter (title, emoji 🤝, colorFrom, colorTo, sdk docker, app_port 7860, pinned false, license apache-2.0, short_description).
 - CI runs unittest on Python 3.9–3.13 on ubuntu and macos.

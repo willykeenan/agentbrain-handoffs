@@ -183,7 +183,7 @@ The live page binds to loopback and refuses non-loopback `Host` headers (DNS-reb
 - Keep the demo and command adapters stable.
 - Harden the Codex and Claude Code adapters as those app protocols settle.
 - More status-page presets for `outageGuard`.
-- The hosted product at [agentrooms.io](https://agentrooms.io) uses this same delivery contract.
+- Planned: [Agent Rooms](https://agentrooms.io) will use this delivery contract.
 
 ## Run with Docker
 
@@ -202,4 +202,4 @@ Apache-2.0. Copyright KE Studios.
 
 Source: [github.com/willykeenan/agentbrain-handoffs](https://github.com/willykeenan/agentbrain-handoffs). Live demo: [huggingface.co/spaces/willykeenan/agentbrain-handoffs](https://huggingface.co/spaces/willykeenan/agentbrain-handoffs).
 
-AgentBrain Handoffs is the open delivery layer of AgentBrain (agentrooms.io), the hosted brain for agent teams.
+AgentBrain Handoffs is the open delivery layer for AgentBrain, the agent runtime coming to Agent Rooms (agentrooms.io).
