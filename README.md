@@ -190,7 +190,7 @@ The live page binds to loopback and refuses non-loopback `Host` headers (DNS-reb
 The image is published at `ghcr.io/willykeenan/agentbrain-handoffs` for Apple silicon and Intel.
 
 ```bash
-docker run --rm -p 8765:8765 ghcr.io/willykeenan/agentbrain-handoffs demo --host 0.0.0.0   # the live demo
+docker run --rm -p 8765:8765 ghcr.io/willykeenan/agentbrain-handoffs demo --host 0.0.0.0 --public-demo   # the live demo
 claude mcp add handoffs -- docker run -i --rm -v ~/.handoffs:/data ghcr.io/willykeenan/agentbrain-handoffs mcp --agent me
 ```
 
